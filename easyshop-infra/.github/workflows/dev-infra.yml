@@ -1,0 +1,129 @@
+name: Deploy infra
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: terraform-prod
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: [self-hosted]
+    environment: prod
+    env:
+      ENV: prod
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE: ${{ vars.AWS_ROLE }}
+      TF_VERSION: "1.10.5"
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Assume CI role
+        run: |
+          CREDS=$(aws sts assume-role \
+            --role-arn "$AWS_ROLE" \
+            --role-session-name "github-infra-plan-${GITHUB_RUN_ID}" \
+            --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+            --output text)
+          AWS_ACCESS_KEY_ID=$(echo "$CREDS" | awk '{print $1}')
+          AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | awk '{print $2}')
+          AWS_SESSION_TOKEN=$(echo "$CREDS" | awk '{print $3}')
+          echo "::add-mask::$AWS_ACCESS_KEY_ID"
+          echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
+          echo "::add-mask::$AWS_SESSION_TOKEN"
+          {
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+            echo "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+          } >> "$GITHUB_ENV"
+
+      - name: Install Terraform
+        run: |
+          curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" \
+            -o /tmp/terraform.zip
+          mkdir -p "$HOME/bin"
+          unzip -o /tmp/terraform.zip -d "$HOME/bin"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          rm /tmp/terraform.zip
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform fmt
+        run: terraform fmt -recursive
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        run: terraform plan -var-file="terraform.tfvars" -out=tfplan
+
+      - name: Upload plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: tfplan
+          retention-days: 1
+
+  apply:
+    needs: [plan]
+    runs-on: [self-hosted]
+    environment: prod
+    env:
+      ENV: prod
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE: ${{ vars.AWS_ROLE }}
+      TF_VERSION: "1.10.5"
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Assume CI role
+        run: |
+          CREDS=$(aws sts assume-role \
+            --role-arn "$AWS_ROLE" \
+            --role-session-name "github-infra-apply-${GITHUB_RUN_ID}" \
+            --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+            --output text)
+          AWS_ACCESS_KEY_ID=$(echo "$CREDS" | awk '{print $1}')
+          AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | awk '{print $2}')
+          AWS_SESSION_TOKEN=$(echo "$CREDS" | awk '{print $3}')
+          echo "::add-mask::$AWS_ACCESS_KEY_ID"
+          echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
+          echo "::add-mask::$AWS_SESSION_TOKEN"
+          {
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+            echo "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+          } >> "$GITHUB_ENV"
+
+      - name: Install Terraform
+        run: |
+          curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip" \
+            -o /tmp/terraform.zip
+          mkdir -p "$HOME/bin"
+          unzip -o /tmp/terraform.zip -d "$HOME/bin"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+          rm /tmp/terraform.zip
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Download plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+
+      - name: Terraform apply
+        run: terraform apply -auto-approve tfplan

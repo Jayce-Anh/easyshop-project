@@ -1,0 +1,64 @@
+services:
+  auth-service:
+    image: ${AUTH_IMAGE:-easyshop-auth:local}
+    build:
+      context: ./easyshop-auth
+      dockerfile: Dockerfile
+    container_name: easyshop-auth
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      PORT: 4000
+      DATABASE_NAME: easyshop
+      NODE_ENV: devlopment
+      ALLOWED_ORIGINS: https://dev-easyshops.jayce-lab.works
+    networks:
+      - easyshop-network
+    restart: unless-stopped
+
+  product-service:
+    image: ${PRODUCT_IMAGE:-easyshop-product:local}
+    build:
+      context: ./easyshop-product
+      dockerfile: Dockerfile
+    container_name: easyshop-product
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      PORT: 5000
+      DATABASE_NAME: easyshop
+      NODE_ENV: development
+      ALLOWED_ORIGINS: https://dev-easyshops.jayce-lab.works
+    networks:
+      - easyshop-network
+    restart: unless-stopped
+
+  cart-service:
+    image: ${CART_IMAGE:-easyshop-cart:local}
+    build:
+      context: ./easyshop-cart
+      dockerfile: Dockerfile
+    container_name: easyshop-cart
+    ports:
+      - "6000:6000"
+    env_file:
+      - .env
+    environment:
+      PORT: 6000
+      DATABASE_NAME: easyshop
+      NODE_ENV: development
+      ALLOWED_ORIGINS: https://dev-easyshops.jayce-lab.works
+      PRODUCT_SERVICE_URL: http://product-service:5000
+    depends_on:
+      - product-service
+    networks:
+      - easyshop-network
+    restart: unless-stopped
+
+networks:
+  easyshop-network:
+    name: easyshop-network

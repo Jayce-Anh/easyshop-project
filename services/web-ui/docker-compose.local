@@ -1,0 +1,156 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: easyshop-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - easyshop-network
+
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: easyshop-valkey
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - easyshop-network
+
+  auth-service:
+    build:
+      context: ../auth
+      dockerfile: Dockerfile
+    container_name: easyshop-auth
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      DATABASE_HOST: mongodb
+      DATABASE_PORT: 27017
+      DATABASE_NAME: easyshop
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      NODE_ENV: development
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8080
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - easyshop-network
+    restart: unless-stopped
+
+  product-service:
+    build:
+      context: ../product
+      dockerfile: Dockerfile
+    container_name: easyshop-product
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      DATABASE_HOST: mongodb
+      DATABASE_PORT: 27017
+      DATABASE_NAME: easyshop
+      CACHE_HOST: valkey
+      CACHE_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      NODE_ENV: development
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8080
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    networks:
+      - easyshop-network
+    restart: unless-stopped
+
+  cart-service:
+    build:
+      context: ../cart
+      dockerfile: Dockerfile
+    container_name: easyshop-cart
+    ports:
+      - "6000:6000"
+    environment:
+      PORT: 6000
+      DATABASE_HOST: mongodb
+      DATABASE_PORT: 27017
+      DATABASE_NAME: easyshop
+      CACHE_HOST: valkey
+      CACHE_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      NODE_ENV: development
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:8080
+      PRODUCT_SERVICE_URL: http://product-service:5000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+      product-service:
+        condition: service_started
+    networks:
+      - easyshop-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8080
+    container_name: easyshop-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-dev-nextauth-secret}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+    depends_on:
+      auth-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      cart-service:
+        condition: service_started
+    networks:
+      - easyshop-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: easyshop-gateway
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - auth-service
+      - product-service
+      - cart-service
+    networks:
+      - easyshop-network
+    restart: unless-stopped
+
+networks:
+  easyshop-network:
+    name: easyshop-network
+
+volumes:
+  mongodb_data:
+    name: mongodb_data
