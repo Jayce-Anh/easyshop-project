@@ -1,0 +1,90 @@
+name: Deploy auth
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted]
+    environment: dev
+    env:
+      ENV: dev
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE: ${{ vars.AWS_ROLE }}
+      AWS_ECR: ${{ vars.AWS_ECR }}
+      SECRET_ID: ${{ vars.SECRET_MANAGER }}
+      COMPOSE_DIR: /home/ubuntu/easyshop
+      COMPOSE_SERVICE: auth-service
+      HEALTH_URL: http://127.0.0.1:4000/health
+      REPO_DIR: easyshop-auth
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Assume CI role
+        run: |
+          CREDS=$(aws sts assume-role \
+            --role-arn "$AWS_ROLE" \
+            --role-session-name "github-auth-deploy-${GITHUB_RUN_ID}" \
+            --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+            --output text)
+          AWS_ACCESS_KEY_ID=$(echo "$CREDS" | awk '{print $1}')
+          AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | awk '{print $2}')
+          AWS_SESSION_TOKEN=$(echo "$CREDS" | awk '{print $3}')
+          echo "::add-mask::$AWS_ACCESS_KEY_ID"
+          echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
+          echo "::add-mask::$AWS_SESSION_TOKEN"
+          {
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+            echo "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+          } >> "$GITHUB_ENV"
+
+      - name: Load Secrets Manager into compose .env
+        run: |
+          test -d "$COMPOSE_DIR"
+          aws secretsmanager get-secret-value \
+            --secret-id "$SECRET_ID" \
+            --region "$AWS_REGION" \
+            --query SecretString --output text \
+            > "$COMPOSE_DIR/.env"
+
+      - name: Sync repo into compose folder
+        run: |
+          mkdir -p "$COMPOSE_DIR/$REPO_DIR"
+          rsync -a --delete --exclude .git "$GITHUB_WORKSPACE/" "$COMPOSE_DIR/$REPO_DIR/"
+
+      - name: Login, build, and push to ECR
+        run: |
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c 1-8)
+          ECR_HOST=$(echo "$AWS_ECR" | cut -d/ -f1)
+          aws ecr get-login-password --region "$AWS_REGION" \
+            | docker login --username AWS --password-stdin "$ECR_HOST"
+          docker build \
+            -t "$AWS_ECR:$SHORT_SHA" \
+            -t "$AWS_ECR:dev" \
+            "$COMPOSE_DIR/$REPO_DIR"
+          docker push "$AWS_ECR:$SHORT_SHA"
+          docker push "$AWS_ECR:dev"
+          echo "AUTH_IMAGE=$AWS_ECR:dev" >> "$GITHUB_ENV"
+
+      - name: Deploy with Docker Compose
+        working-directory: ${{ env.COMPOSE_DIR }}
+        run: |
+          docker compose up -d "$COMPOSE_SERVICE"
+          docker compose ps "$COMPOSE_SERVICE"
+
+      - name: Health check
+        run: |
+          for i in 1 2 3 4 5 6; do
+            if curl -sf "$HEALTH_URL"; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Health check failed: $HEALTH_URL"
+          exit 1

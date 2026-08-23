@@ -1,0 +1,123 @@
+name: Deploy web-ui
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [self-hosted]
+    environment: dev
+    container:
+      image: node:20.19.0
+    env:
+      ENV: dev
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE: ${{ vars.AWS_ROLE }}
+      SECRET_ID: ${{ vars.SECRET_MANAGER }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: true
+
+      - name: Install AWS CLI
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends awscli
+
+      - name: Assume CI role
+        run: |
+          CREDS=$(aws sts assume-role \
+            --role-arn "$AWS_ROLE" \
+            --role-session-name "github-web-ui-build-${GITHUB_RUN_ID}" \
+            --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+            --output text)
+          AWS_ACCESS_KEY_ID=$(echo "$CREDS" | awk '{print $1}')
+          AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | awk '{print $2}')
+          AWS_SESSION_TOKEN=$(echo "$CREDS" | awk '{print $3}')
+          echo "::add-mask::$AWS_ACCESS_KEY_ID"
+          echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
+          echo "::add-mask::$AWS_SESSION_TOKEN"
+          {
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+            echo "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+          } >> "$GITHUB_ENV"
+
+      - name: Load Secrets Manager into .env
+        run: |
+          aws secretsmanager get-secret-value \
+            --secret-id "$SECRET_ID" \
+            --region "$AWS_REGION" \
+            --query SecretString --output text \
+            > .env
+          set -a && . ./.env && set +a
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static export for S3
+        env:
+          NEXT_OUTPUT: export
+        run: |
+          npm run build
+          test -d out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-ui
+          path: out
+          if-no-files-found: error
+
+      - name: Cleanup workspace
+        if: always()
+        run: rm -rf node_modules .next out .env
+
+  deploy:
+    needs: [build]
+    runs-on: [self-hosted]
+    environment: dev
+    container:
+      image: node:20.19.0
+    env:
+      ENV: dev
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE: ${{ vars.AWS_ROLE }}
+      S3_BUCKET: ${{ vars.AWS_S3_BUCKET }}
+      DISTRIBUTION_ID: ${{ vars.DISTRIBUTION_ID }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-ui
+          path: out
+
+      - name: Install AWS CLI
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends awscli
+
+      - name: Assume CI role
+        run: |
+          CREDS=$(aws sts assume-role \
+            --role-arn "$AWS_ROLE" \
+            --role-session-name "github-web-ui-deploy-${GITHUB_RUN_ID}" \
+            --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+            --output text)
+          AWS_ACCESS_KEY_ID=$(echo "$CREDS" | awk '{print $1}')
+          AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | awk '{print $2}')
+          AWS_SESSION_TOKEN=$(echo "$CREDS" | awk '{print $3}')
+          echo "::add-mask::$AWS_ACCESS_KEY_ID"
+          echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
+          echo "::add-mask::$AWS_SESSION_TOKEN"
+          {
+            echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID"
+            echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY"
+            echo "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN"
+          } >> "$GITHUB_ENV"
+
+      - name: Sync to S3 and invalidate CloudFront
+        run: |
+          aws s3 sync ./out "s3://${S3_BUCKET}" --delete --exact-timestamps --region "$AWS_REGION"
+          aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/*"
