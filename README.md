@@ -192,7 +192,9 @@ aws sts get-caller-identity
 - This workspace stores the source code. Push each folder to its own GitHub repo.
 - Create your Github Organization, and from there create these repositories: `easyshop-infra`, `easyshop-auth`, `easyshop-product`, `easyshop-cart`, `easyshop-web-ui`.
 <img src="docs/images/image6.png" alt="GitHub repositories" width="800" />
+
 - Create two branches in each repository for each environment: **dev** and **main**.
+
 <img src="docs/images/image7.png" alt="Create branches" width="800" />
 
 ### Local setup
