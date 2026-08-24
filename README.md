@@ -54,12 +54,12 @@ The goal is a complete path from Terraform infrastructure → CI pipeline → EC
   - [1. Config Terraform variables](#1-config-terraform-variables)
   - [2. Setup S3 backend remote state](#2-setup-s3-backend-remote-state)
   - [3. Deploy Route53 Hosted Zone in production environment](#3-deploy-route53-hosted-zone-in-production-environment)
-  - [3. Validate domain certificates](#3-validate-domain-certificates)
-  - [4. Deploy the development infrastructure](#4-deploy-the-development-infrastructure)
-  - [5. Setup Secret Manager for development environment](#5-setup-secret-manager-for-development-environment)
-  - [6. Connect to EC2, build and run Docker Compose](#6-connect-to-ec2-build-and-run-docker-compose)
-  - [7. Setup CI/CD for development](#7-setup-cicd-for-development)
-  - [8. Verify application development environment](#8-verify-application-development-environment)
+  - [4. Validate domain certificates](#4-validate-domain-certificates)
+  - [5. Deploy the development infrastructure](#5-deploy-the-development-infrastructure)
+  - [6. Setup Secret Manager for development environment](#6-setup-secret-manager-for-development-environment)
+  - [7. Connect to EC2, build and run Docker Compose](#7-connect-to-ec2-build-and-run-docker-compose)
+  - [8. Setup CI/CD for development](#8-setup-cicd-for-development)
+  - [9. Verify application development environment](#9-verify-application-development-environment)
 - [V. Deploy Infrastructure — Production](#v-deploy-infrastructure--production)
   - [1. Deploy the rest of the services](#1-deploy-the-rest-of-the-services)
   - [2. Update application secrets](#2-update-application-secrets)
@@ -145,7 +145,7 @@ Easy shop/
 
 - Prepare an 2 AWS accounts (one for development and one for production) and sign in to the AWS Management Console.
 
-<img src="images/image1.png" alt="AWS account console" width="800" />
+<img src="docs/images/image1.png" alt="AWS account console" width="800" />
 
 - Create 2 AWS SSO profile for development and production in `~/.aws/config`. Example:
 
@@ -162,45 +162,45 @@ export AWS_PROFILE=<your-aws-profile>
 aws sts get-caller-identity
 ```
 
-<img src="images/image2.png" alt="AWS profile sso" width="800" />
+<img src="docs/images/image2.png" alt="AWS profile sso" width="800" />
 
 - Optional: If you want SSH to the bastion, application server, etc. instead of Session Manager, create an EC2 key pair in AWS console, then download the private key and set your key in the ec2 module.
 
-<img src="images/image3.png" alt="AWS EC2 Key-Pair" width="800" />
-<img src="images/image4.png" alt="AWS EC2 Key-Pair" width="800" />
+<img src="docs/images/image3.png" alt="AWS EC2 Key-Pair" width="800" />
+<img src="docs/images/image4.png" alt="AWS EC2 Key-Pair" width="800" />
 
 ### Domain
 
 - Buy a domain from a registrar such as Cloudflare, GoDaddy, or Namecheap. Mine is: `jayce-lab.works`.
 
-<img src="images/image5.png" alt="Domain registration" width="800" />
+<img src="docs/images/image5.png" alt="Domain registration" width="800" />
 
 ### GitHub account
 
 - This workspace stores the source code. Push each folder to its own GitHub repo.
 - Create your Github Organization, and from there create these repositories: `easyshop-infra`, `easyshop-auth`, `easyshop-product`, `easyshop-cart`, `easyshop-web-ui`.
-<img src="images/image6.png" alt="GitHub repositories" width="800" />
+<img src="docs/images/image6.png" alt="GitHub repositories" width="800" />
 - Create new branch **dev** from **main** in each repository for development environment.
-<img src="images/image7.png" alt="Switch to dev branch" width="800" />
+<img src="docs/images/image7.png" alt="Switch to dev branch" width="800" />
 
 ### Local setup
 
 - Clone this workspace. Push each `Services/` folder and `easyshop-infra` to its matching GitHub repo.
 
-<img src="images/image8.png" alt="Local repository folder structure" width="300" />
+<img src="docs/images/image8.png" alt="Local repository folder structure" width="300" />
 
 - Install the required tools: AWS CLI, Git, Terraform, Docker, Docker Compose, and session-manager-plugin (optional).
 
-<img src="images/image9.png" alt="Installed local tools" width="600" />
+<img src="docs/images/image9.png" alt="Installed local tools" width="600" />
 
 - Login to AWS via AWS CLI.
 
-<img src="images/image10.png" alt="AWS CLI login" width="800" />
+<img src="docs/images/image10.png" alt="AWS CLI login" width="800" />
 
 - Create Key-pair to connect to the EC2 Bastion and Application Server, if you don't want to use Session Manager.
 
-<img src="images/image11.png" alt="Create Key-pair" width="800" />
-<img src="images/image12.png" alt="Create Key-pair" width="800" />
+<img src="docs/images/image11.png" alt="Create Key-pair" width="800" />
+<img src="docs/images/image12.png" alt="Create Key-pair" width="800" />
 
 ## IV. Deploy Infrastructure — Development
 
@@ -215,7 +215,7 @@ git checkout -b dev
 - Configure the remote state Terraform variables in `easyshop-infra/remote-tfstate/terraform.tfvars` and root module Terraform variables in `easyshop-infra/terraform.tfvars`. Replace the values with your own.
 - Do the same for the production environment.
 
-<img src="images/image13.png" alt="Terraform variables" width="800" />
+<img src="docs/images/image13.png" alt="Terraform variables" width="800" />
 
 ### 2. Setup S3 backend remote state
 
@@ -229,8 +229,8 @@ terraform apply
 
 This creates bucket `dev-easyshop-tf-state` (from `remote-tfstate/terraform.tfvars`). Use this bucket for **dev** Terraform state (different state keys or workspaces).
 
-<img src="images/image14.png" alt="S3 backend remote state-dev" width="800" />
-<img src="images/image15.png" alt="S3 backend remote state-prod" width="800" />
+<img src="docs/images/image14.png" alt="S3 backend remote state-dev" width="800" />
+<img src="docs/images/image15.png" alt="S3 backend remote state-prod" width="800" />
 
 - Go to root module, run `terraform init` to download the required providers.
 
@@ -246,11 +246,11 @@ terraform apply --target=module.hosted_zone
 
 - Go to your domain registrar and add a domain name server (DNS) for the Route53 Hosted Zone. Wait for the Route53 Hosted Zone to be created. About 10-30 minutes.
 
-<img src="images/image16.png" alt="Route53 Hosted Zone" width="800" />
-<img src="images/image17.png" alt="Add domain name server" width="800" />
+<img src="docs/images/image16.png" alt="Route53 Hosted Zone" width="800" />
+<img src="docs/images/image17.png" alt="Add domain name server" width="800" />
 
 
-### 3. Validate domain certificates
+### 4. Validate domain certificates
 - Deploy the ACM module in development environment to validate the domain.
 
 ```bash
@@ -259,13 +259,13 @@ git switch dev
 terraform apply --target=module.acm
 ```
 - Go to ACM in AWS Console (Production account), then copy CNAME name and value.
-<img src="images/image18.png" alt="ACM CNAME" width="800" />
+<img src="docs/images/image18.png" alt="ACM CNAME" width="800" />
 - Go to Hosted Zone in AWS Console (Production account) and create a DNS record for the dev domain with the CNAME name and value. Wait for the ACM certificates to be created. About 10-30 minutes.
 
-<img src="images/image19.png" alt="Add DNS record" width="800" />
-<img src="images/image20.png" alt="Confirm ACM certificates in Issued state" width="800" />
+<img src="docs/images/image19.png" alt="Add DNS record" width="800" />
+<img src="docs/images/image20.png" alt="Confirm ACM certificates in Issued state" width="800" />
 
-### 4. Deploy the development infrastructure
+### 5. Deploy the development infrastructure
 
 - Deploy the development infrastructure by running `terraform apply` in `easyshop-infra`. Wait for the infrastructure to be deployed.
 
@@ -285,13 +285,13 @@ terraform apply
 | Valkey | ElastiCache Valkey 7.2 (`cache.t3.micro`, 2 nodes, port 6379) | In-memory cache for product and cart; automatic failover |
 | Secrets Manager | App secrets | Stores DocumentDB and Valkey connection values for auth, product, cart, and web-ui |
 
-### 5. Setup Secret Manager for development environment
+### 6. Setup Secret Manager for development environment
 
 - Go to AWS Secret Manager console, verify the secret is created by Terraform.
 - It should already contain DocumentDB and Valkey connection values for auth, product, cart, and web-ui.
 
-<img src="images/image21.png" alt="Secret Manager" width="800" />
-<img src="images/image22.png" alt="Secret Manager values" width="800" />
+<img src="docs/images/image21.png" alt="Secret Manager" width="800" />
+<img src="docs/images/image22.png" alt="Secret Manager values" width="800" />
 
 - Add the remaining secrets values in `env.example` file in each auth, product, cart, and web-ui service folder. 
 - The envs must be in plain text format for Docker Compose to read.
@@ -300,15 +300,15 @@ terraform apply
 aws secretsmanager get-secret-value --secret-id ${SECRET_MANAGER} --region ${REGION} --query SecretString --output text | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env
 ```
 - Option 2: Edit convert all secrets values to plain text format manually in AWS console. 
-<img src="images/image23.png" alt="Secret Manager values" width="800" />
+<img src="docs/images/image23.png" alt="Secret Manager values" width="800" />
 
-### 6. Connect to EC2, build and run Docker Compose
+### 7. Connect to EC2, build and run Docker Compose
 ```bash
 aws ssm start-session --target <ec2-instance-id> # if you use Session Manager
 # or
 ssh -i ~/.ssh/<your-key-pair>.pem ubuntu@<ec2-eip> # if you use Key-pair
 ```
-<img src="images/image24.png" alt="Connect to EC2" width="800" />
+<img src="docs/images/image24.png" alt="Connect to EC2" width="800" />
 
 - Switch user to ubuntu if you use Session Manager.
 ```bash
@@ -324,13 +324,13 @@ git clone https://github.com/Jayce-Anh/easyshop-cart.git
 git clone https://github.com/Jayce-Anh/easyshop-web-ui.git
 mv easyshop-web-ui/docker-compose.yml .
 ```
-<img src="images/image25.png" alt="Move Docker Compose file" width="800" />
+<img src="docs/images/image25.png" alt="Move Docker Compose file" width="800" />
 
-### 7. Setup CI/CD for development
+### 8. Setup CI/CD for development
 
 - Setup Self host group runner **dev-easyshop** for CI/CD in Github Organization console: Settings -> Actions -> Runner Groups -> New runner group -> Create group -> New runner.
-<img src="images/image26.png" alt="Self host group runner" width="800" />
-<img src="images/image27.png" alt="Self host group runner configuration" width="800" />
+<img src="docs/images/image26.png" alt="Self host group runner" width="800" />
+<img src="docs/images/image27.png" alt="Self host group runner configuration" width="800" />
 
 - Setup Github action agent in EC2 instance. Follow command and instructions in the Github action agent page.
 ```text
@@ -346,13 +346,13 @@ sudo ./svc.sh install
 sudo ./svc.sh start
 sudo ./svc.sh status
 ```
-<img src="images/image28.png" alt="Github action agent" width="800" />
+<img src="docs/images/image28.png" alt="Github action agent" width="800" />
 Verify the agent is running in terminal and Github console.
-<img src="images/image29.png" alt="Github action agent status" width="800" />
+<img src="docs/images/image29.png" alt="Github action agent status" width="800" />
 
 - Create environment **dev** for each service repository. From there create environment variables for each service repository.
-<img src="images/image30.png" alt="Github action environment" width="800" />
-<img src="images/image31.png" alt="Github action environment" width="800" />
+<img src="docs/images/image30.png" alt="Github action environment" width="800" />
+<img src="docs/images/image31.png" alt="Github action environment" width="800" />
 
 Set these on the **`dev` environment** in each GitHub repo (`Settings → Environments → dev`):
 
@@ -366,17 +366,17 @@ Set these on the **`dev` environment** in each GitHub repo (`Settings → Enviro
 | `AWS_ECR` | Auth, Product, Cart | ECR repository URL. |
 
 * Push the changes to the repository to trigger the CI/CD pipeline. Result:
-<img src="images/image32.png" alt="Web-ui pipeline" width="800" /> 
-<img src="images/image33.png" alt="Auth pipeline" width="800" />
-<img src="images/image34.png" alt="Product pipeline" width="800" />
-<img src="images/image35.png" alt="Cart pipeline" width="800" />
-<img src="images/image36.png" alt="Infrastructure pipeline" width="800" />
+<img src="docs/images/image32.png" alt="Web-ui pipeline" width="800" /> 
+<img src="docs/images/image33.png" alt="Auth pipeline" width="800" />
+<img src="docs/images/image34.png" alt="Product pipeline" width="800" />
+<img src="docs/images/image35.png" alt="Cart pipeline" width="800" />
+<img src="docs/images/image36.png" alt="Infrastructure pipeline" width="800" />
 
-### 8. Verify application development environment
+### 9. Verify application development environment
 
 - Open the development storefront on browser: `https://dev-easyshops.jayce-lab.works`
 
-<img src="images/image37.png" alt="Development storefront" width="800" />
+<img src="docs/images/image37.png" alt="Development storefront" width="800" />
 
 
 ## V. Deploy Infrastructure — Production
@@ -412,8 +412,8 @@ terraform apply
 - Go to AWS Secret Manager console, verify the secret is created by Terraform.
 - It should already contain DocumentDB and Valkey connection values for auth, product, cart, and web-ui.
 
-<img src="images/image38.png" alt="Secret Manager" width="800" />
-<img src="images/image39.png" alt="Secret Manager values" width="800" />
+<img src="docs/images/image38.png" alt="Secret Manager" width="800" />
+<img src="docs/images/image39.png" alt="Secret Manager values" width="800" />
 
 - Add the remaining secrets values in `env.example` file in each auth, product, cart, and web-ui service folder. 
 - The envs must be in plain text format for Docker Compose to read.
@@ -422,37 +422,37 @@ terraform apply
 aws secretsmanager get-secret-value --secret-id ${SECRET_MANAGER} --region ${REGION} --query SecretString --output text | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env
 ```
 - Option 2: Edit convert all secrets values to plain text format manually in AWS console. 
-<img src="images/image40.png" alt="Secret Manager values" width="800" />
+<img src="docs/images/image40.png" alt="Secret Manager values" width="800" />
 
 ### 3. Setup CI/CD for production
 - Go to AWS Console → CodePipeline → Developer Tools → Settings → Connections. Find prod-easyshops-github → click it → Update pending connection button.
 - AWS opens a popup that redirects to GitHub automatically. Click "Install a new app" button (next to the search box).
-<img src="images/image41.png" alt="CodeStar connection" width="800" />
-<img src="images/image42.png" alt="CodeStar connection" width="800" />
+<img src="docs/images/image41.png" alt="CodeStar connection" width="800" />
+<img src="docs/images/image42.png" alt="CodeStar connection" width="800" />
 
 - On that GitHub page, at the top there's an account switcher — pick Jayce-lab-2k1 organization (not your personal account).
-<img src="images/image43.png" alt="CodeStar connection" width="800" />
+<img src="docs/images/image43.png" alt="CodeStar connection" width="800" />
 
 - Choose "Only select repositories" → select the easyshop-* repos → click Install & Authorize.
-<img src="images/image44.png" alt="CodeStar connection" width="800" />
+<img src="docs/images/image44.png" alt="CodeStar connection" width="800" />
 
 - It redirects back to AWS -> Click "Connect" button. Connection status should become Available.
-<img src="images/image45.png" alt="CodeStar connection available" width="800" />
-<img src="images/image46.png" alt="CodeStar connection available" width="800" />
+<img src="docs/images/image45.png" alt="CodeStar connection available" width="800" />
+<img src="docs/images/image46.png" alt="CodeStar connection available" width="800" />
 
 - Run and verify pipelines in AWS Console.
-<img src="images/image47.png" alt="CodePipeline" width="800" />
-<img src="images/image48.png" alt="Web-ui pipeline" width="800" />
-<img src="images/image49.png" alt="Auth pipeline" width="800" />
-<img src="images/image50.png" alt="Product pipeline" width="800" />
-<img src="images/image51.png" alt="Cart pipeline" width="800" />
+<img src="docs/images/image47.png" alt="CodePipeline" width="800" />
+<img src="docs/images/image48.png" alt="Web-ui pipeline" width="800" />
+<img src="docs/images/image49.png" alt="Auth pipeline" width="800" />
+<img src="docs/images/image50.png" alt="Product pipeline" width="800" />
+<img src="docs/images/image51.png" alt="Cart pipeline" width="800" />
 
 - In Infrastructure pipeline, on Approval stage, click "Submit" button to continue to Apply stage.
-<img src="images/image52.png" alt="Infrastructure pipeline" width="800" />
+<img src="docs/images/image52.png" alt="Infrastructure pipeline" width="800" />
 
 - Verify application storefront in browser: `https://easyshops.jayce-lab.works`
 
-<img src="images/image53.png" alt="Application storefront" width="800" />
+<img src="docs/images/image53.png" alt="Application storefront" width="800" />
 
 ### 4. Setup logging and monitoring (CloudWatch)
 
@@ -465,11 +465,11 @@ Prod API logs go to CloudWatch (7-day retention):
 | Cart | `/ecs/prod-easyshops-cart` |
 
 - Open **CloudWatch → Log groups** and filter by `/ecs/prod-easyshops`.
-<img src="images/image54.png" alt="CloudWatch log groups" width="800" />
-<img src="images/image55.png" alt="CloudWatch / Container Insights" width="800" />
+<img src="docs/images/image54.png" alt="CloudWatch log groups" width="800" />
+<img src="docs/images/image55.png" alt="CloudWatch / Container Insights" width="800" />
 
 - ECS Container Insights is enabled on cluster `prod-easyshops` for CPU, memory, and task metrics.
-<img src="images/image56.png" alt="CloudWatch Dashboard" width="800" />
+<img src="docs/images/image56.png" alt="CloudWatch Dashboard" width="800" />
 
 - Each resource module ships its own `cloudwatch.tf` and dashboard:
 
@@ -480,14 +480,14 @@ Prod API logs go to CloudWatch (7-day retention):
 | `modules/alb` | `prod-easyshops-alb-observability` | ALB Target 4XX/5XX error counts per service (error rate), total request count |
 
 - Open **CloudWatch → Dashboards** and verify the three dashboards above are created.
-<img src="images/image57.png" alt="CloudWatch Dashboard" width="800" />
-<img src="images/image58.png" alt="CloudWatch Dashboard" width="800" />
-<img src="images/image59.png" alt="CloudWatch Dashboard" width="800" />
+<img src="docs/images/image57.png" alt="CloudWatch Dashboard" width="800" />
+<img src="docs/images/image58.png" alt="CloudWatch Dashboard" width="800" />
+<img src="docs/images/image59.png" alt="CloudWatch Dashboard" width="800" />
 
 - `modules/ecs/cloudwatch.tf` also creates a CPU-high and Memory-high alarm per service (auth, product, cart), firing when utilization is above 50% for 2 consecutive periods. Alarms notify an SNS topic (`prod-easyshops-ecs-alarms`); set `alarm_email` in `terraform.tfvars` to get email notifications.
 - Open **CloudWatch → Alarms** and verify the 6 ECS alarms are created.
-<img src="images/image60.png" alt="CloudWatch Alarms" width="800" />
-<img src="images/image61.png" alt="CloudWatch Alarms" width="800" />
+<img src="docs/images/image60.png" alt="CloudWatch Alarms" width="800" />
+<img src="docs/images/image61.png" alt="CloudWatch Alarms" width="800" />
 
 ## VI. Clean up the lab
 
