@@ -37,6 +37,9 @@ The goal is a complete path from Terraform infrastructure → CI pipeline → EC
 
 > The storefront started from that repository. Backend APIs were split into Node.js microservices. Infrastructure, CI/CD, and AWS hosting were built for this lab.
 
+### My other project
+- [shopping-cart-project](https://github.com/Jayce-Anh/shopping-cart-project) — Microservice shopping cart web application, deployed on AWS EKS with GitLab CI, ArgoCD GitOps, EFK logging, and Kube-Prometheus monitoring.
+
 ## Table of Contents
 
 - [I. Introduction](#i-introduction)
@@ -134,7 +137,6 @@ Easy shop/
 │   │   │   ├── cart/                    # → GitHub: easyshop-cart
 │   │   │   └── web-ui/                  # → GitHub: easyshop-web-ui 
 │   │   └── easyshop-infra/              # → GitHub: easyshop-infra
-|   |
 │   └── prod/                            # → Push to branch: main
 │       ├── Services/
 │       │   ├── auth/                    # → GitHub: easyshop-auth
@@ -155,11 +157,11 @@ Easy shop/
 
 ### AWS account
 
-- Prepare an 2 AWS accounts (one for development and one for production) and sign in to the AWS Management Console.
+- Prepare 2 AWS accounts (one for development and one for production) and sign in to the AWS Management Console.
 
 <img src="docs/images/image1.png" alt="AWS account console" width="800" />
 
-- Create 2 AWS SSO profile for development and production in `~/.aws/config`. Example:
+- Create 2 AWS SSO profiles for development and production in `~/.aws/config`. Example:
 
 ```
 [profile sso]
@@ -201,7 +203,7 @@ aws sts get-caller-identity
 
 ### Local setup
 
-- Clone this workspace. Push each `env/dev/*` and `env/prod/*` folder as branch **dev** and **main** 
+- Clone this workspace. Push `env/dev/*` to branch **dev**, and `env/prod/*` to branch **main**.
 
 <img src="docs/images/image8.png" alt="Local repository folder structure" width="300" />
 
@@ -237,7 +239,7 @@ terraform init
 terraform apply
 ```
 
-This creates bucket `dev-easyshop-tf-state` (from `remote-tfstate/terraform.tfvars`). Use this bucket for **dev** Terraform state (different state keys or workspaces). Do the same for production environment **prod**
+This creates bucket `dev-easyshop-tf-state` (from `remote-tfstate/terraform.tfvars`). Use this bucket for **dev** Terraform state (different state keys or workspaces). Do the same for the **prod** environment.
 
 <img src="docs/images/image14.png" alt="S3 backend remote state-dev" width="800" />
 <img src="docs/images/image15.png" alt="S3 backend remote state-prod" width="800" />
@@ -254,7 +256,7 @@ git switch main
 terraform apply --target=module.hosted_zone
 ```
 
-- Go to your domain registrar and add a domain name server (DNS) for the Route53 Hosted Zone. Wait for the Route53 Hosted Zone to be created. About 10-30 minutes.
+- Go to your domain registrar and add a domain name server (DNS) for the Route53 Hosted Zone. Wait for your domain to be transferred to AWS, about 10-30 minutes.
 
 <img src="docs/images/image16.png" alt="Route53 Hosted Zone" width="800" />
 <img src="docs/images/image17.png" alt="Add domain name server" width="800" />
@@ -269,8 +271,10 @@ git switch dev
 terraform apply --target=module.acm
 ```
 - Go to ACM in AWS Console (Production account), then copy CNAME name and value.
+
 <img src="docs/images/image18.png" alt="ACM CNAME" width="800" />
-- Go to Hosted Zone in AWS Console (Production account) and create a DNS record for the dev domain with the CNAME name and value. Wait for the ACM certificates to be created. About 10-30 minutes.
+
+- Go to Hosted Zone in AWS Console (Production account) and create a DNS record for the dev domain with the CNAME name and value. Wait for the ACM certificates (Dev account) to be issued (about 10-30 minutes).
 
 <img src="docs/images/image19.png" alt="Add DNS record" width="800" />
 <img src="docs/images/image20.png" alt="Confirm ACM certificates in Issued state" width="800" />
@@ -303,13 +307,13 @@ terraform apply
 <img src="docs/images/image21.png" alt="Secret Manager" width="800" />
 <img src="docs/images/image22.png" alt="Secret Manager values" width="800" />
 
-- Add the remaining secrets values in `env.example` file in each auth, product, cart, and web-ui service folder. 
+- Add the remaining secret values in `env.example` file in each auth, product, cart, and web-ui service folder. 
 - The envs must be in plain text format for Docker Compose to read.
   - Option 1: You can use python3 to convert the secret values from json format to plain text format in cicd pipeline file `.github\workflows\dev-auth.yml`.
 ```bash
 aws secretsmanager get-secret-value --secret-id ${SECRET_MANAGER} --region ${REGION} --query SecretString --output text | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env
 ```
-- Option 2: Edit convert all secrets values to plain text format manually in AWS console. 
+  - Option 2: Edit and convert all secret values to plain text format manually in AWS console. 
 <img src="docs/images/image23.png" alt="Secret Manager values" width="800" />
 
 ### 7. Connect to EC2, build and run Docker Compose
@@ -357,14 +361,16 @@ sudo ./svc.sh start
 sudo ./svc.sh status
 ```
 <img src="docs/images/image28.png" alt="Github action agent" width="800" />
-Verify the agent is running in terminal and Github console.
+
+- Verify the agent is running in terminal and Github console.
+
 <img src="docs/images/image29.png" alt="Github action agent status" width="800" />
 
 - Create environment **dev** for each service repository. From there create environment variables for each service repository.
 <img src="docs/images/image30.png" alt="Github action environment" width="800" />
 <img src="docs/images/image31.png" alt="Github action environment" width="800" />
 
-Set these on the **`dev` environment** in each GitHub repo (`Settings → Environments → dev`):
+- Set these environment variables on the `dev` environment in each GitHub repo (`Settings → Environments → dev`):
 
 | Variable | Services used | Description |
 | -------- | ---------------------- | ----------- |
@@ -375,7 +381,7 @@ Set these on the **`dev` environment** in each GitHub repo (`Settings → Enviro
 | `DISTRIBUTION_ID` | Web-ui | CloudFront distribution ID for cache invalidation. |
 | `AWS_ECR` | Auth, Product, Cart | ECR repository URL. |
 
-* Push the changes to the repository to trigger the CI/CD pipeline. Result:
+- Push the changes to the repository to trigger the CI/CD pipeline. Result:
 <img src="docs/images/image32.png" alt="Web-ui pipeline" width="800" /> 
 <img src="docs/images/image33.png" alt="Auth pipeline" width="800" />
 <img src="docs/images/image34.png" alt="Product pipeline" width="800" />
@@ -393,7 +399,7 @@ Set these on the **`dev` environment** in each GitHub repo (`Settings → Enviro
 
 ### 1. Deploy the rest of the services
 
-- Hosted Zone are already created in development environment.
+- Hosted Zone is already created in development environment.
 - Deploy the remaining modules from `easyshop-infra/main.tf`
 
 ```bash
@@ -425,13 +431,13 @@ terraform apply
 <img src="docs/images/image38.png" alt="Secret Manager" width="800" />
 <img src="docs/images/image39.png" alt="Secret Manager values" width="800" />
 
-- Add the remaining secrets values in `env.example` file in each auth, product, cart, and web-ui service folder. 
+- Add the remaining secret values in `env.example` file in each auth, product, cart, and web-ui service folder. 
 - The envs must be in plain text format for Docker Compose to read.
   - Option 1: You can use python3 to convert the secret values from json format to plain text format in cicd pipeline file `modules/cicd/pipeline/prod-easyshop-backend.yml`.
 ```bash
 aws secretsmanager get-secret-value --secret-id ${SECRET_MANAGER} --region ${REGION} --query SecretString --output text | jq -r 'to_entries[] | "\(.key)=\(.value)"' > .env
 ```
-- Option 2: Edit convert all secrets values to plain text format manually in AWS console. 
+- Option 2: Edit and convert all secret values to plain text format manually in AWS console. 
 <img src="docs/images/image40.png" alt="Secret Manager values" width="800" />
 
 ### 3. Setup CI/CD for production
