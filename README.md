@@ -81,8 +81,8 @@ The goal is a complete path from Terraform infrastructure → CI pipeline → EC
 
 ### 1. Architecture
 
-<img src="images/architecture-dev.png" alt="Architecture-dev" width="800" />
-<img src="images/architecture-prod.png" alt="Architecture-prod" width="800" />
+<img src="docs/images/architecture-dev.png" alt="Architecture-dev" width="800" />
+<img src="docs/images/architecture-prod.png" alt="Architecture-prod" width="800" />
 
 ```
 Browser → CloudFront (easyshops.jayce-lab.works)
