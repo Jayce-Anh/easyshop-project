@@ -190,7 +190,9 @@ aws sts get-caller-identity
 ### GitHub account
 
 - This workspace stores the source code. Push each folder to its own GitHub repo.
+
 - Create your Github Organization, and from there create these repositories: `easyshop-infra`, `easyshop-auth`, `easyshop-product`, `easyshop-cart`, `easyshop-web-ui`.
+
 <img src="docs/images/image6.png" alt="GitHub repositories" width="800" />
 
 - Create two branches in each repository for each environment: **dev** and **main**.
@@ -235,7 +237,7 @@ terraform init
 terraform apply
 ```
 
-This creates bucket `dev-easyshop-tf-state` (from `remote-tfstate/terraform.tfvars`). Use this bucket for **dev** Terraform state (different state keys or workspaces).
+This creates bucket `dev-easyshop-tf-state` (from `remote-tfstate/terraform.tfvars`). Use this bucket for **dev** Terraform state (different state keys or workspaces). Do the same for production environment **prod**
 
 <img src="docs/images/image14.png" alt="S3 backend remote state-dev" width="800" />
 <img src="docs/images/image15.png" alt="S3 backend remote state-prod" width="800" />
