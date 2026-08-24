@@ -122,22 +122,34 @@ Internet-facing hostname format: `<env>-<application_name>.<your-domain>` (dev) 
 
 ### 4. Repository
 
-This workspace stores all source. Each folder is a **separate GitHub repo**. CI/CD uses CodePipeline per service.
+This workspace stores all source. Each service folder maps to a **separate GitHub repo**. The `dev/` and `prod/` folders both map to the **same repos**, just pushed to different branches. CI/CD uses CodePipeline per service.
 
 ```
 Easy shop/
-├── Services/
-│   ├── auth/                 # → GitHub: easyshop-auth
-│   ├── product/              # → GitHub: easyshop-product
-│   ├── cart/                 # → GitHub: easyshop-cart
-│   └── web-ui/               # → GitHub: easyshop-web-ui (includes docker-compose.yml)
-├── easyshop-infra/           # → GitHub: easyshop-infra
-└── docs/
+├── env/
+│   ├── dev/                             # → Push to branch: dev
+│   │   ├── Services/
+│   │   │   ├── auth/                    # → GitHub: easyshop-auth
+│   │   │   ├── product/                 # → GitHub: easyshop-product
+│   │   │   ├── cart/                    # → GitHub: easyshop-cart
+│   │   │   └── web-ui/                  # → GitHub: easyshop-web-ui (includes docker-compose.yml)
+│   │   └── easyshop-infra/              # → GitHub: easyshop-infra
+|   |
+│   └── prod/                            # → Push to branch: main
+│       ├── Services/
+│       │   ├── auth/                    # → GitHub: easyshop-auth
+│       │   ├── product/                 # → GitHub: easyshop-product
+│       │   ├── cart/                    # → GitHub: easyshop-cart
+│       │   └── web-ui/                  # → GitHub: easyshop-web-ui (includes docker-compose.yml)
+│       └── easyshop-infra/              # → GitHub: easyshop-infra
+├── docs/
+├── images/
+└── README.md
 ```
 
-- Clone this workspace for the source tree.
-- Create matching GitHub repos from each folder above.
-
+- Clone this workspace to get the source tree.
+- `env/dev/*` → push to branch **dev** of each repo.
+- `env/prod/*` → push to branch **main** of each repo.
 
 ## III. Prerequisites
 
@@ -185,11 +197,11 @@ aws sts get-caller-identity
 
 ### Local setup
 
-- Clone this workspace. Push each `Services/` folder and `easyshop-infra` to its matching GitHub repo.
+- Clone this workspace. Push each `env/dev/*` and `env/prod/*` folder as branch **dev** and **main** 
 
 <img src="docs/images/image8.png" alt="Local repository folder structure" width="300" />
 
-- Install the required tools: AWS CLI, Git, Terraform, Docker, Docker Compose, and session-manager-plugin (optional).
+- Install the required tools: AWS CLI, Git, Terraform, Docker, Docker Compose, and Session Manager plugin (optional).
 
 <img src="docs/images/image9.png" alt="Installed local tools" width="600" />
 
