@@ -132,7 +132,7 @@ Easy shop/
 │   │   │   ├── auth/                    # → GitHub: easyshop-auth
 │   │   │   ├── product/                 # → GitHub: easyshop-product
 │   │   │   ├── cart/                    # → GitHub: easyshop-cart
-│   │   │   └── web-ui/                  # → GitHub: easyshop-web-ui (includes docker-compose.yml)
+│   │   │   └── web-ui/                  # → GitHub: easyshop-web-ui 
 │   │   └── easyshop-infra/              # → GitHub: easyshop-infra
 |   |
 │   └── prod/                            # → Push to branch: main
@@ -140,7 +140,7 @@ Easy shop/
 │       │   ├── auth/                    # → GitHub: easyshop-auth
 │       │   ├── product/                 # → GitHub: easyshop-product
 │       │   ├── cart/                    # → GitHub: easyshop-cart
-│       │   └── web-ui/                  # → GitHub: easyshop-web-ui (includes docker-compose.yml)
+│       │   └── web-ui/                  # → GitHub: easyshop-web-ui
 │       └── easyshop-infra/              # → GitHub: easyshop-infra
 ├── docs/
 ├── images/
@@ -215,12 +215,6 @@ aws sts get-caller-identity
 <img src="docs/images/image12.png" alt="Create Key-pair" width="800" />
 
 ## IV. Deploy Infrastructure — Development
-
-- Start with development deployment. Checkout branch **dev** from **main** in each repository
-
-```bash
-git checkout -b dev
-```
 
 ### 1. Config Terraform variables  
 
