@@ -22,7 +22,7 @@ variable "subnet_id" {
   description = "Public subnet ID for the bastion"
 }
 
-variable "kms_key" {
+variable "kms_key_id" {
   type        = string
   description = "KMS key ARN/ID for EBS encryption for the bastion"
 }

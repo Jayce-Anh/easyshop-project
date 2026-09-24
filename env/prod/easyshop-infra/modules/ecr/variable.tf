@@ -11,7 +11,12 @@ variable "tags" {
   description = "Common tags applied to all resources"
 }
 
-variable "kms_key" {
+variable "kms_key_id" {
   type        = string
   description = "KMS key ARN for ECR image encryption"
+}
+
+variable "services" {
+  type        = map(any)
+  description = "Service names keyed by services"
 }

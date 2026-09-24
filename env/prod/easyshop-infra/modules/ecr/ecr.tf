@@ -2,8 +2,8 @@
 
 #================= ECR Repository ================#
 resource "aws_ecr_repository" "ecr" {
-  for_each             = toset(["auth", "product", "cart"])
-  name                 = "${var.project.env}-${var.project.name}-${each.key}"
+  for_each             = var.services
+  name                 = "${var.project.env}-${var.project.name}-${each.value.name}"
   force_delete         = true
   image_tag_mutability = "MUTABLE"
 
@@ -13,11 +13,11 @@ resource "aws_ecr_repository" "ecr" {
 
   encryption_configuration {
     encryption_type = "KMS"
-    kms_key         = var.kms_key
+    kms_key         = var.kms_key_id
   }
 
   tags = merge(var.tags, {
-    Name   = "${var.project.env}-${var.project.name}-${each.key}"
+    Name   = "${var.project.env}-${var.project.name}-${each.value.name}"
     Module = "${path.module}"
   })
 }

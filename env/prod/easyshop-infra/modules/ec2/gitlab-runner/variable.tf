@@ -20,7 +20,7 @@ variable "subnet_id" {
   description = "Public subnet ID for the GitLab runner"
 }
 
-variable "kms_key" {
+variable "kms_key_id" {
   type        = string
   description = "KMS key ARN/ID for EBS encryption (null = AWS-managed default key) for the GitLab runner"
 }

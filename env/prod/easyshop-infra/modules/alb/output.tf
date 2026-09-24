@@ -25,9 +25,5 @@ output "lb_listener_http_arn" {
 
 output "tg_arns" {
   description = "Target group ARNs by service name"
-  value = {
-    auth    = "${aws_lb_target_group.auth.arn}"
-    product = "${aws_lb_target_group.product.arn}"
-    cart    = "${aws_lb_target_group.cart.arn}"
-  }
+  value       = { for key, tg in aws_lb_target_group.service : key => tg.arn }
 }

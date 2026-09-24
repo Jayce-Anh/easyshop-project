@@ -27,7 +27,8 @@ variable "cache_allowed_sg" {
   description = "List of security group IDs allowed to access the cache"
 }
 
-variable "kms_key" {
+variable "kms_key_id" {
   type        = string
-  description = "KMS key ARN for ElastiCache at-rest encryption"
+  default     = null
+  description = "KMS key ARN for ElastiCache at-rest encryption (null = AWS managed key)"
 }

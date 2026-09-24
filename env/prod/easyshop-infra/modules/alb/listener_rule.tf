@@ -6,7 +6,7 @@ resource "aws_lb_listener_rule" "http_auth" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.auth.arn
+    target_group_arn = aws_lb_target_group.service["auth"].arn
   }
 
   condition {
@@ -22,7 +22,7 @@ resource "aws_lb_listener_rule" "http_product" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.product.arn
+    target_group_arn = aws_lb_target_group.service["product"].arn
   }
 
   condition {
@@ -38,7 +38,7 @@ resource "aws_lb_listener_rule" "http_cart" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.cart.arn
+    target_group_arn = aws_lb_target_group.service["cart"].arn
   }
 
   condition {

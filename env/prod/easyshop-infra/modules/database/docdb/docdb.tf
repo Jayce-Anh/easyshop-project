@@ -39,7 +39,7 @@ resource "aws_docdb_cluster" "db" {
   db_cluster_parameter_group_name = aws_docdb_cluster_parameter_group.db.name
   vpc_security_group_ids          = [aws_security_group.sg_db.id]
   storage_encrypted               = true
-  kms_key_id                      = var.kms_key
+  kms_key_id                      = var.kms_key_id
   backup_retention_period         = 7
   preferred_backup_window         = "02:00-03:00"
   preferred_maintenance_window    = "sun:04:00-sun:05:00"

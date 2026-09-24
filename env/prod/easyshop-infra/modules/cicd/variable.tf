@@ -47,3 +47,8 @@ variable "cicd_cart_env" {
   type        = map(string)
   description = "Environment variables for the cart codebuild project"
 }
+
+variable "services" {
+  type        = map(any)
+  description = "Service names keyed by services"
+}

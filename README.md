@@ -37,7 +37,7 @@ The goal is a complete path from Terraform infrastructure → CI pipeline → EC
 
 > The storefront started from that repository. Backend APIs were split into Node.js microservices. Infrastructure, CI/CD, and AWS hosting were built for this lab.
 
-### My other project
+### Checkout my other projects
 - [shopping-cart-project](https://github.com/Jayce-Anh/shopping-cart-project) — Microservice shopping cart web application, deployed on AWS EKS with GitLab CI, ArgoCD GitOps, EFK logging, and Kube-Prometheus monitoring.
 
 ## Table of Contents

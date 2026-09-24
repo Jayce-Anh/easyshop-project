@@ -21,3 +21,8 @@ variable "alb_subnet_ids" {
   type        = list(string)
   description = "Public subnet IDs for the ALB"
 }
+
+variable "services" {
+  type        = map(any)
+  description = "Service names keyed by services"
+}

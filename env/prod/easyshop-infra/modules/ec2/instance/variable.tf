@@ -20,7 +20,7 @@ variable "subnet_id" {
   description = "Private subnet ID for the EC2 instance"
 }
 
-variable "kms_key" {
+variable "kms_key_id" {
   type        = string
   description = "KMS key ARN/ID for EBS encryption for the EC2 instance"
 }

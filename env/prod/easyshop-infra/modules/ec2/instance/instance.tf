@@ -13,7 +13,7 @@ resource "aws_instance" "ec2" {
     volume_size           = 40
     volume_type           = "gp3"
     encrypted             = true
-    kms_key_id            = var.kms_key
+    kms_key_id            = var.kms_key_id
   }
 
   instance_market_options {

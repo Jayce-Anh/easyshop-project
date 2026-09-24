@@ -28,16 +28,17 @@ module "alb" {
   tags           = var.tags
   alb_vpc_id     = module.vpc.vpc_id
   alb_subnet_ids = module.vpc.public_subnet_ids
+  services       = var.services
 }
 
 #================= Bastion =================#
 module "bastion" {
-  source    = "./modules/ec2/bastions"
-  project   = var.project
-  tags      = var.tags
-  vpc_id    = module.vpc.vpc_id
-  subnet_id = module.vpc.public_subnet_ids[0]
-  kms_key   = module.kms.key_arn
+  source     = "./modules/ec2/bastions"
+  project    = var.project
+  tags       = var.tags
+  vpc_id     = module.vpc.vpc_id
+  subnet_id  = module.vpc.public_subnet_ids[0]
+  kms_key_id = module.kms.key_arn
 }
 
 #================= CloudFront =================#
@@ -51,10 +52,11 @@ module "cloudfront" {
 
 #================= ECR =================#
 module "ecr" {
-  source  = "./modules/ecr"
-  project = var.project
-  tags    = var.tags
-  kms_key = module.kms.key_arn
+  source     = "./modules/ecr"
+  project    = var.project
+  tags       = var.tags
+  kms_key_id = module.kms.key_arn
+  services   = var.services
 }
 
 #================= ECS =================#
@@ -78,7 +80,7 @@ module "docdb" {
   docdb_vpc_id     = module.vpc.vpc_id
   docdb_subnet_ids = module.vpc.private_subnet_ids
   docdb_allowed_sg = [module.ecs.ecs_tasks_sg_id, module.bastion.sg_id]
-  kms_key          = module.kms.key_arn
+  kms_key_id       = module.kms.key_arn
 }
 
 #================= Valkey =================#
@@ -89,7 +91,7 @@ module "valkey" {
   cache_vpc_id     = module.vpc.vpc_id
   cache_subnet_ids = module.vpc.private_subnet_ids
   cache_allowed_sg = [module.ecs.ecs_tasks_sg_id, module.bastion.sg_id]
-  kms_key          = module.kms.key_arn
+  kms_key_id       = module.kms.key_arn
 }
 
 #================= Secrets =================#
@@ -97,9 +99,10 @@ module "secrets" {
   source       = "./modules/secret-manager"
   project      = var.project
   tags         = var.tags
-  kms_key      = module.kms.key_arn
+  kms_key_id   = module.kms.key_arn
   secret_docdb = module.docdb.docdb_credentials
   secret_cache = module.valkey.cache_credentials
+  services     = var.services
 }
 
 #================= CI/CD =================#
@@ -109,6 +112,7 @@ module "cicd" {
   tags             = var.tags
   cicd_git         = var.cicd_git
   cicd_ecs_cluster = module.ecs.cluster_name
+  services         = var.services
 
   cicd_ui_env = {
     s3_bucket_name  = module.cloudfront.s3_bucket

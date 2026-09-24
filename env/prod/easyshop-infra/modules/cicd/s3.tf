@@ -1,6 +1,6 @@
 #========================= S3 Bucket ==========================#
 resource "aws_s3_bucket" "bucket_artifact" {
-  for_each      = toset(["auth", "product", "cart", "web-ui", "infra"])
+  for_each      = toset("auth", "cart", "product", "web-ui", "infra")
   bucket        = "${var.project.env}-${var.project.name}-${each.key}-pipeline-artifact"
   force_destroy = true
 

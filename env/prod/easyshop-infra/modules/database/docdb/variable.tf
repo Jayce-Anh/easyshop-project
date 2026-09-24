@@ -27,7 +27,7 @@ variable "docdb_allowed_sg" {
   description = "List of allowed security group IDs to DocumentDB"
 }
 
-variable "kms_key" {
+variable "kms_key_id" {
   type        = string
   description = "KMS key ARN"
 }
